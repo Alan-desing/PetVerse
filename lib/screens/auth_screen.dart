@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/auth_form_provider.dart';
+import '../services/auth_service.dart';
+import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
 
 /// Responsive sign-in and registration screen for PetVerse.
@@ -19,6 +23,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -29,23 +34,103 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
-  void _showSetupNotice() {
+  void _showMessage(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Formulario listo. La conexión con Firebase se agrega en el siguiente bloque.',
-          ),
-        ),
-      );
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _submit() {
+  String _authErrorMessage(FirebaseAuthException error) {
+    return switch (error.code) {
+      'email-already-in-use' => 'Ya existe una cuenta con ese correo.',
+      'invalid-email' => 'El formato del correo no es válido.',
+      'user-disabled' => 'Esta cuenta está deshabilitada.',
+      'user-not-found' ||
+      'wrong-password' ||
+      'invalid-credential' => 'El correo o la contraseña son incorrectos.',
+      'weak-password' => 'Elige una contraseña más segura.',
+      'operation-not-allowed' =>
+        'El acceso por correo todavía no está activado en Firebase.',
+      'too-many-requests' =>
+        'Hubo demasiados intentos. Espera un momento y vuelve a probar.',
+      'network-request-failed' =>
+        'No hay conexión. Revisa internet e inténtalo otra vez.',
+      _ => 'No pudimos completar el acceso. Inténtalo de nuevo.',
+    };
+  }
+
+  Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    if (_formKey.currentState?.validate() ?? false) {
-      _showSetupNotice();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final isRegistering = context.read<AuthFormProvider>().isRegistering;
+    setState(() => _isSubmitting = true);
+
+    try {
+      if (isRegistering) {
+        final displayName = _nameController.text.trim();
+        final credential = await AuthService.instance.createAccount(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+        final user = credential.user;
+        if (user != null) {
+          await AuthService.instance.updateDisplayName(user, displayName);
+          await UserProfileService.instance.getOrCreateProfile(
+            user,
+            fallbackName: displayName,
+          );
+        }
+      } else {
+        await AuthService.instance.signIn(
+          email: _emailController.text,
+          password: _passwordController.text,
+        );
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted) _showMessage(_authErrorMessage(error));
+    } on FirebaseException catch (error) {
+      if (!mounted) return;
+      _showMessage(
+        error.code == 'permission-denied'
+            ? 'La cuenta se creó, pero Firestore todavía no permite guardar el perfil. Publica las reglas del proyecto.'
+            : 'La cuenta se creó, pero no pudimos guardar el perfil todavía.',
+      );
+    } catch (_) {
+      if (mounted) {
+        _showMessage('No pudimos completar el registro. Inténtalo de nuevo.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _sendPasswordReset() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      _showMessage(
+        'Escribe tu correo para enviarte el enlace de recuperación.',
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+    try {
+      await AuthService.instance.sendPasswordResetEmail(email);
+      if (mounted) {
+        _showMessage('Si hay una cuenta con ese correo, recibirá un enlace.');
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted) _showMessage(_authErrorMessage(error));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showGoogleSetupNotice() {
+    _showMessage(
+      'Para usar Google, activa ese proveedor en Firebase. En este bloque funciona el acceso por correo y contraseña.',
+    );
   }
 
   @override
@@ -247,7 +332,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: _showSetupNotice,
+                      onPressed: _isSubmitting ? null : _sendPasswordReset,
                       style: TextButton.styleFrom(
                         foregroundColor: AppTheme.orange,
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -260,7 +345,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 SizedBox(
                   height: 54,
                   child: FilledButton(
-                    onPressed: _submit,
+                    onPressed: _isSubmitting ? null : _submit,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.orange,
                       foregroundColor: Colors.white,
@@ -272,18 +357,27 @@ class _AuthScreenState extends State<AuthScreen> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    child: Text(
-                      formState.isRegistering
-                          ? 'Crear mi cuenta'
-                          : 'Iniciar sesión',
-                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            formState.isRegistering
+                                ? 'Crear mi cuenta'
+                                : 'Iniciar sesión',
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 const _DividerLabel(label: 'o continúa con'),
                 const SizedBox(height: 18),
                 OutlinedButton.icon(
-                  onPressed: _showSetupNotice,
+                  onPressed: _isSubmitting ? null : _showGoogleSetupNotice,
                   icon: const Icon(Icons.g_mobiledata_rounded, size: 27),
                   label: const Text('Continuar con Google'),
                   style: OutlinedButton.styleFrom(

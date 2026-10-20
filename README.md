@@ -10,7 +10,19 @@ Red social para compartir la vida con tus mascotas. El proyecto se construye por
 - Nombre, descripción y colores de la aplicación web instalable (PWA).
 - Provider para el estado visual del formulario.
 
-La autenticación todavía no está conectada: para habilitarla hace falta crear o elegir un proyecto de Firebase y generar su configuración para Flutter.
+## Bloque 2: autenticación y perfil
+
+- Firebase se inicializa con la configuración web de `petverse-alan-2026`.
+- Registro, inicio de sesión y recuperación de contraseña con correo.
+- Cierre de sesión y cambio automático entre acceso y perfil.
+- Perfil básico con nombre y descripción guardados en Firestore.
+- Reglas de Firestore en `firestore.rules`; cada usuario puede leer y modificar únicamente su propio perfil.
+
+El acceso con Google queda pendiente de habilitar el proveedor Google en Firebase Console.
+
+### Publicar las reglas de Firestore
+
+La base se creó en modo de producción, por lo que las lecturas y escrituras quedan bloqueadas hasta publicar reglas. En Firebase Console, abre **Firestore Database → Reglas**, reemplaza el contenido por el de `firestore.rules` y presiona **Publicar**.
 
 ## Ejecutar en desarrollo
 
@@ -27,6 +39,6 @@ El SDK y las herramientas instaladas para este equipo están disponibles desde l
 
 El proyecto ya incluye los paquetes para Firebase Core, Authentication, Firestore, Storage, Messaging y Cloud Functions, además de Provider, selección de imágenes, internacionalización y notificaciones locales. Se irán usando a medida que se incorporen los bloques funcionales.
 
-## Configurar Firebase más adelante
+## Configuración Firebase
 
-Cuando exista un proyecto de Firebase, inicia sesión con Firebase CLI y ejecuta `flutterfire configure` desde esta carpeta. Ese paso genera la configuración específica del proyecto; no se incluye ningún identificador ni credencial de ejemplo.
+La configuración web generada por FlutterFire está en `lib/firebase_options.dart`. Si se agrega otra plataforma en el futuro, vuelve a ejecutar `flutterfire configure` desde la carpeta del proyecto y selecciona las plataformas necesarias.

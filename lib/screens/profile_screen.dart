@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
+import 'adoptions_screen.dart';
+import 'chat_screen.dart';
 import 'feed_screen.dart';
 import 'pets_section.dart';
 
@@ -137,7 +139,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -145,10 +147,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(fontWeight: FontWeight.w800),
           ),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(
                 icon: Icon(Icons.dynamic_feed_rounded),
                 text: 'Publicaciones',
+              ),
+              Tab(icon: Icon(Icons.pets_rounded), text: 'Adopciones'),
+              Tab(
+                icon: Icon(Icons.chat_bubble_outline_rounded),
+                text: 'Mensajes',
               ),
               Tab(icon: Icon(Icons.person_outline_rounded), text: 'Mi perfil'),
             ],
@@ -165,6 +173,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         body: TabBarView(
           children: [
             FeedScreen(user: widget.user),
+            AdoptionsScreen(user: widget.user),
+            ChatScreen(user: widget.user),
             _buildProfileTab(context),
           ],
         ),

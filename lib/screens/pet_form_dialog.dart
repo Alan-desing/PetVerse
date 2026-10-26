@@ -24,8 +24,10 @@ class _PetFormDialogState extends State<PetFormDialog> {
   final _weightController = TextEditingController();
   final _bioController = TextEditingController();
   final _photoUrlsController = TextEditingController();
+  final _locationController = TextEditingController();
 
   late String _type;
+  bool _isForAdoption = false;
   bool _isSaving = false;
   String? _errorMessage;
 
@@ -40,6 +42,8 @@ class _PetFormDialogState extends State<PetFormDialog> {
     _weightController.text = pet?.weightKg.toString() ?? '';
     _bioController.text = pet?.bio ?? '';
     _photoUrlsController.text = pet?.photoUrls.join('\n') ?? '';
+    _locationController.text = pet?.location ?? '';
+    _isForAdoption = pet?.isForAdoption ?? false;
   }
 
   @override
@@ -50,6 +54,7 @@ class _PetFormDialogState extends State<PetFormDialog> {
     _weightController.dispose();
     _bioController.dispose();
     _photoUrlsController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -97,6 +102,8 @@ class _PetFormDialogState extends State<PetFormDialog> {
         weightKg: double.parse(_weightController.text.replaceAll(',', '.')),
         bio: _bioController.text.trim(),
         photoUrls: _photoUrls(),
+        location: _locationController.text.trim(),
+        isForAdoption: _isForAdoption,
       );
       await PetService.instance.savePet(pet);
       if (mounted) Navigator.of(context).pop(true);
@@ -231,6 +238,39 @@ class _PetFormDialogState extends State<PetFormDialog> {
                     hintText: 'Cuéntanos cómo es tu mascota',
                   ),
                 ),
+                const SizedBox(height: 14),
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Publicar en adopciones'),
+                  subtitle: const Text(
+                    'Otros usuarios podrán ver el perfil y enviarte una solicitud.',
+                  ),
+                  value: _isForAdoption,
+                  activeThumbColor: AppTheme.orange,
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _isForAdoption = value),
+                ),
+                if (_isForAdoption) ...[
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _locationController,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Localidad',
+                      hintText: 'Por ejemplo, Córdoba Capital',
+                    ),
+                    validator: (value) {
+                      if (_isForAdoption && (value ?? '').trim().isEmpty) {
+                        return 'Indica en qué localidad está';
+                      }
+                      if ((value ?? '').trim().length > 100) {
+                        return 'Máximo 100 caracteres';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
                 const SizedBox(height: 10),
                 TextFormField(
                   controller: _photoUrlsController,

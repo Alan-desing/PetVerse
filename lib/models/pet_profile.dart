@@ -12,6 +12,8 @@ class PetProfile {
     required this.weightKg,
     required this.bio,
     required this.photoUrls,
+    this.location = '',
+    this.isForAdoption = false,
   });
 
   final String id;
@@ -23,6 +25,8 @@ class PetProfile {
   final double weightKg;
   final String bio;
   final List<String> photoUrls;
+  final String location;
+  final bool isForAdoption;
 
   factory PetProfile.fromDocument(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
@@ -38,6 +42,8 @@ class PetProfile {
       weightKg: (data['weightKg'] as num?)?.toDouble() ?? 0,
       bio: data['bio'] as String? ?? '',
       photoUrls: List<String>.from(data['photoUrls'] as List? ?? const []),
+      location: data['location'] as String? ?? '',
+      isForAdoption: data['isForAdoption'] as bool? ?? false,
     );
   }
 
@@ -50,5 +56,7 @@ class PetProfile {
     'weightKg': weightKg,
     'bio': bio.trim(),
     'photoUrls': photoUrls,
+    'location': location.trim(),
+    'isForAdoption': isForAdoption,
   };
 }

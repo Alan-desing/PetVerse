@@ -23,6 +23,14 @@ Las fotos de perfil y de mascotas también se cargan con un enlace web. Si en el
 - Me gusta con botón o doble clic en la imagen, animación, usuario marcado y contador actualizado en tiempo real.
 - Comentarios en tiempo real; cada usuario puede eliminar sus propios comentarios.
 
+## Grupo 3: PV7 y PV9
+
+- Catálogo de mascotas publicadas para adopción, con filtros por tipo, rango de edad y localidad.
+- Detalle de cada mascota y formulario para contactar al dueño.
+- La solicitud de contacto crea un chat privado entre ambos usuarios.
+- Historial de mensajes en tiempo real desde la pestaña Mensajes.
+- Las solicitudes quedan visibles para el dueño en Adopciones → Solicitudes recibidas. No se envían correos automáticos.
+
 ## Firebase
 
 El proyecto usa `petverse-alan-2026`. En Authentication, activa Google si aún no lo hiciste. En **Firestore Database → Reglas**, publica el contenido actualizado de `firestore.rules` después de copiarlo a Firebase Console. No es necesario configurar Storage.

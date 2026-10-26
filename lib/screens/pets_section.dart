@@ -33,7 +33,9 @@ class PetsSection extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFB3261E)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFB3261E),
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -44,9 +46,9 @@ class PetsSection extends StatelessWidget {
     try {
       await PetService.instance.deletePet(pet);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(pet.name + ' fue eliminada.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(pet.name + ' fue eliminada.')));
       }
     } catch (_) {
       if (context.mounted) {
@@ -127,12 +129,15 @@ class _PetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeName = pet.type == 'cat' ? 'Gato' : 'Perro';
-    final ageLabel = pet.ageYears == 1 ? '1 año' : pet.ageYears.toString() + ' años';
+    final ageLabel = pet.ageYears == 1
+        ? '1 año'
+        : pet.ageYears.toString() + ' años';
     final details = [
       typeName,
       if (pet.breed.isNotEmpty) pet.breed,
       ageLabel,
       pet.weightKg.toString() + ' kg',
+      if (pet.isForAdoption) 'En adopción · ' + pet.location,
     ].join(' · ');
 
     return Card(
@@ -152,11 +157,12 @@ class _PetTile extends StatelessWidget {
           backgroundImage: pet.photoUrls.isNotEmpty
               ? NetworkImage(pet.photoUrls.first)
               : null,
-          child: pet.photoUrls.isEmpty
-              ? const Icon(Icons.pets_rounded)
-              : null,
+          child: pet.photoUrls.isEmpty ? const Icon(Icons.pets_rounded) : null,
         ),
-        title: Text(pet.name, style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text(
+          pet.name,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         subtitle: Text(
           details + (pet.bio.isNotEmpty ? '\n' + pet.bio : ''),
           maxLines: 3,
@@ -219,7 +225,10 @@ class _SectionCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),

@@ -17,7 +17,6 @@ service cloud.firestore {
             'email',
             'bio',
             'photoUrl',
-            'photoStoragePath',
             'createdAt',
             'updatedAt'
           ])
@@ -38,8 +37,6 @@ service cloud.firestore {
           && data.bio is string
           && data.bio.size() <= 240
           && (data.photoUrl == null || data.photoUrl is string)
-          && (!data.keys().hasAny(['photoStoragePath'])
-              || data.photoStoragePath is string)
           && data.createdAt is timestamp
           && data.updatedAt is timestamp;
     }
@@ -54,7 +51,6 @@ service cloud.firestore {
             'weightKg',
             'bio',
             'photoUrls',
-            'storagePaths',
             'createdAt',
             'updatedAt'
           ])
@@ -67,7 +63,6 @@ service cloud.firestore {
             'weightKg',
             'bio',
             'photoUrls',
-            'storagePaths',
             'createdAt',
             'updatedAt'
           ])
@@ -87,43 +82,70 @@ service cloud.firestore {
           && data.bio is string
           && data.bio.size() <= 240
           && data.photoUrls is list
-          && data.photoUrls.size() > 0
           && data.photoUrls.size() <= 6
-          && data.storagePaths is list
-          && data.storagePaths.size() == data.photoUrls.size()
           && data.createdAt is timestamp
           && data.updatedAt is timestamp;
     }
 
-    function validMedia(data, userId) {
+    function validPost(data, userId) {
       return data.keys().hasOnly([
-            'fileName',
-            'contentType',
-            'downloadUrl',
-            'storagePath',
+            'authorId',
+            'authorName',
+            'authorPhotoUrl',
+            'caption',
+            'mediaUrl',
+            'mediaType',
+            'likeCount',
             'createdAt'
           ])
           && data.keys().hasAll([
-            'fileName',
-            'contentType',
-            'downloadUrl',
-            'storagePath',
+            'authorId',
+            'authorName',
+            'authorPhotoUrl',
+            'caption',
+            'mediaUrl',
+            'mediaType',
+            'likeCount',
             'createdAt'
           ])
-          && data.fileName is string
-          && data.fileName.size() > 0
-          && data.fileName.size() <= 255
-          && data.contentType is string
-          && (data.contentType.matches('image/.*')
-              || data.contentType.matches('video/.*'))
-          && data.downloadUrl is string
-          && data.storagePath is string
-          && data.storagePath.split('/').size() == 4
-          && data.storagePath.split('/')[0] == 'users'
-          && data.storagePath.split('/')[1] == userId
-          && data.storagePath.split('/')[2] == 'media'
-          && data.storagePath.split('/')[3].size() > 0
+          && data.authorId == userId
+          && data.authorName is string
+          && data.authorName.size() > 0
+          && data.authorName.size() <= 80
+          && (data.authorPhotoUrl == null || data.authorPhotoUrl is string)
+          && data.caption is string
+          && data.caption.size() > 0
+          && data.caption.size() <= 500
+          && (data.mediaUrl == null
+              || (data.mediaUrl is string && data.mediaUrl.matches('https://.*')))
+          && data.mediaType in ['none', 'image', 'video']
+          && ((data.mediaUrl == null && data.mediaType == 'none')
+              || (data.mediaUrl is string && data.mediaType in ['image', 'video']))
+          && data.likeCount is int
+          && data.likeCount == 0
           && data.createdAt is timestamp;
+    }
+
+    function likePath(postId, userId) {
+      return /databases/$(database)/documents/posts/$(postId)/likes/$(userId);
+    }
+
+    function parentPostPath(postId) {
+      return /databases/$(database)/documents/posts/$(postId);
+    }
+
+    function validLikeCountChange(postId) {
+      return signedIn()
+          && request.resource.data.diff(resource.data)
+              .affectedKeys().hasOnly(['likeCount'])
+          && request.resource.data.likeCount is int
+          && request.resource.data.likeCount >= 0
+          && ((!exists(likePath(postId, request.auth.uid))
+                  && existsAfter(likePath(postId, request.auth.uid))
+                  && request.resource.data.likeCount == resource.data.likeCount + 1)
+              || (exists(likePath(postId, request.auth.uid))
+                  && !existsAfter(likePath(postId, request.auth.uid))
+                  && request.resource.data.likeCount == resource.data.likeCount - 1));
     }
 
     match /users/{userId} {
@@ -141,7 +163,6 @@ service cloud.firestore {
             'displayName',
             'bio',
             'photoUrl',
-            'photoStoragePath',
             'updatedAt'
           ]);
 
@@ -149,26 +170,69 @@ service cloud.firestore {
 
       match /pets/{petId} {
         allow read: if ownsProfile(userId);
-
         allow create: if ownsProfile(userId)
             && validPet(request.resource.data, userId);
-
         allow update: if ownsProfile(userId)
             && validPet(request.resource.data, userId)
             && request.resource.data.ownerId == resource.data.ownerId
             && request.resource.data.createdAt == resource.data.createdAt;
-
         allow delete: if ownsProfile(userId);
       }
+    }
 
-      match /media/{mediaId} {
-        allow read: if ownsProfile(userId);
+    match /posts/{postId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+          && validPost(request.resource.data, request.auth.uid);
+      allow update: if validLikeCountChange(postId);
+      allow delete: if false;
 
-        allow create: if ownsProfile(userId)
-            && validMedia(request.resource.data, userId);
-
+      match /likes/{userId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+            && request.auth.uid == userId
+            && request.resource.data.keys().hasOnly(['userId', 'createdAt'])
+            && request.resource.data.keys().hasAll(['userId', 'createdAt'])
+            && request.resource.data.userId == userId
+            && request.resource.data.createdAt is timestamp
+            && !exists(likePath(postId, userId))
+            && get(parentPostPath(postId)).data.likeCount is int
+            && getAfter(parentPostPath(postId)).data.likeCount
+                == get(parentPostPath(postId)).data.likeCount + 1;
         allow update: if false;
-        allow delete: if ownsProfile(userId);
+        allow delete: if signedIn()
+            && request.auth.uid == userId
+            && get(parentPostPath(postId)).data.likeCount is int
+            && getAfter(parentPostPath(postId)).data.likeCount
+                == get(parentPostPath(postId)).data.likeCount - 1;
+      }
+
+      match /comments/{commentId} {
+        allow read: if signedIn() && exists(parentPostPath(postId));
+        allow create: if signedIn() && exists(parentPostPath(postId))
+            && request.resource.data.keys().hasOnly([
+              'authorId',
+              'authorName',
+              'text',
+              'createdAt'
+            ])
+            && request.resource.data.keys().hasAll([
+              'authorId',
+              'authorName',
+              'text',
+              'createdAt'
+            ])
+            && request.resource.data.authorId == request.auth.uid
+            && request.resource.data.authorName is string
+            && request.resource.data.authorName.size() > 0
+            && request.resource.data.authorName.size() <= 80
+            && request.resource.data.text is string
+            && request.resource.data.text.size() > 0
+            && request.resource.data.text.size() <= 500
+            && request.resource.data.createdAt is timestamp;
+        allow update: if false;
+        allow delete: if signedIn() && exists(parentPostPath(postId))
+            && resource.data.authorId == request.auth.uid;
       }
     }
   }

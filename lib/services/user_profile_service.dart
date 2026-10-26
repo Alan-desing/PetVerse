@@ -6,14 +6,12 @@ import '../models/user_profile.dart';
 /// Reads and updates the signed-in user's Firestore profile document.
 class UserProfileService {
   UserProfileService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Shared profile service used by the application.
   static final UserProfileService instance = UserProfileService();
 
   final FirebaseFirestore _firestore;
 
-  /// Returns the user's profile, creating a basic document if needed.
   Future<UserProfile> getOrCreateProfile(
     User user, {
     String? fallbackName,
@@ -47,17 +45,15 @@ class UserProfileService {
     return UserProfile.fromMap(createdSnapshot.data()!);
   }
 
-  /// Saves the editable name and biography for a user's profile.
   Future<UserProfile> updateProfile({
     required User user,
     required String displayName,
     required String bio,
+    required String? photoUrl,
   }) async {
     final normalizedName = displayName.trim();
-    final profile = await getOrCreateProfile(
-      user,
-      fallbackName: normalizedName,
-    );
+    await getOrCreateProfile(user, fallbackName: normalizedName);
+    final normalizedPhotoUrl = photoUrl?.trim();
     final profileReference = _firestore.collection('users').doc(user.uid);
 
     await profileReference.set({
@@ -65,41 +61,24 @@ class UserProfileService {
       'displayName': normalizedName,
       'email': user.email ?? '',
       'bio': bio.trim(),
-      'photoUrl': profile.photoUrl,
-      if (profile.photoStoragePath != null)
-        'photoStoragePath': profile.photoStoragePath,
+      'photoUrl': normalizedPhotoUrl == null || normalizedPhotoUrl.isEmpty
+          ? null
+          : normalizedPhotoUrl,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // Firestore is the app's source of truth; Auth keeps a convenient display name.
     try {
       await user.updateDisplayName(normalizedName);
+      await user.updatePhotoURL(
+        normalizedPhotoUrl == null || normalizedPhotoUrl.isEmpty
+            ? null
+            : normalizedPhotoUrl,
+      );
     } on FirebaseAuthException {
-      // Keep the saved PetVerse profile even if updating Auth fails.
+      // Firestore remains the source of truth for the PetVerse profile.
     }
 
     final updatedSnapshot = await profileReference.get();
     return UserProfile.fromMap(updatedSnapshot.data()!);
-  }
-
-  /// Saves the profile photo URL and its Storage path in Firestore.
-  Future<void> updatePhotoUrl({
-    required User user,
-    required String photoUrl,
-    required String storagePath,
-  }) async {
-    await getOrCreateProfile(user);
-    final profileReference = _firestore.collection('users').doc(user.uid);
-    await profileReference.set({
-      'photoUrl': photoUrl,
-      'photoStoragePath': storagePath,
-      'updatedAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    try {
-      await user.updatePhotoURL(photoUrl);
-    } on FirebaseAuthException {
-      // Keep the saved PetVerse profile even if updating Auth fails.
-    }
   }
 }

@@ -58,6 +58,5 @@ class DefaultFirebaseOptions {
     messagingSenderId: '756524931969',
     projectId: 'petverse-alan-2026',
     authDomain: 'petverse-alan-2026.firebaseapp.com',
-    storageBucket: 'petverse-alan-2026.firebasestorage.app',
   );
 }

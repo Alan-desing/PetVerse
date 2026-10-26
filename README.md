@@ -1,28 +1,31 @@
 # PetVerse
 
-Red social para compartir la vida con tus mascotas. El proyecto se desarrolla por grupos de requisitos para que cada avance pueda guardarse en un commit separado.
+Red social para compartir la vida con tus mascotas. El proyecto avanza por grupos de requisitos para que cada parte pueda guardarse en un commit separado.
 
-## Grupo 1: PV1, PV2, PV3 y PV8 — acceso, perfiles, mascotas y archivos
+## Sin vincular facturación
+
+Este proyecto no usa Firebase Storage ni necesita vincular una cuenta de facturación. Las imágenes y los videos se agregan mediante enlaces públicos directos; la aplicación guarda solo el enlace y los demás datos en Firestore. No se suben archivos desde el dispositivo.
+
+Las fotos de perfil y de mascotas también se cargan con un enlace web. Si en el futuro se quiere subir archivos desde el dispositivo a la nube, habrá que elegir un servicio de almacenamiento y revisar sus condiciones por separado.
+
+## Grupo 1: PV1, PV2, PV3 y PV8
 
 - Registro e inicio de sesión con correo y contraseña.
 - Acceso con Google y recuperación de contraseña por correo.
-- Perfil de usuario editable: nombre, descripción y foto.
-- Alta, edición y eliminación de perfiles de mascotas: nombre, tipo, raza, edad, peso, descripción y fotos.
-- Selección de fotos y videos desde el dispositivo, subida a Firebase Storage y barra de progreso.
-- Reglas de acceso para Firestore y Storage en `firestore.rules` y `storage.rules`.
+- Perfil editable: nombre, descripción y enlace a una foto.
+- Alta, edición y eliminación de mascotas: nombre, tipo, raza, edad, peso, descripción y enlaces de fotos.
+- El requisito PV8 de subir archivos desde el dispositivo a Firebase Storage queda pendiente porque el proyecto no utilizará Storage.
 
-Las fotos no se agregan manualmente a una carpeta del proyecto: cada usuario las elige desde la aplicación.
+## Grupo 2: PV4, PV5 y PV6
 
-## Configuración pendiente en Firebase
+- Feed de publicaciones en orden cronológico, con autor, texto y enlace opcional de imagen o video.
+- Videos reproducibles en la publicación cuando el enlace apunta directamente a un formato compatible con el navegador.
+- Me gusta con botón o doble clic en la imagen, animación, usuario marcado y contador actualizado en tiempo real.
+- Comentarios en tiempo real; cada usuario puede eliminar sus propios comentarios.
 
-La aplicación usa el proyecto `petverse-alan-2026`. Antes de probar el acceso con Google y las cargas, revisa estos ajustes en Firebase Console:
+## Firebase
 
-1. **Activar Google:** abre **Authentication → Sign-in method**, selecciona **Google**, actívalo y guarda.
-2. **Publicar Firestore:** abre **Firestore Database → Reglas**, reemplaza el contenido por `firestore.rules` y presiona **Publicar**.
-3. **Habilitar Storage:** abre **Storage** y crea/activa el bucket. Firebase requiere el plan Blaze para usar Cloud Storage en proyectos nuevos; esto puede generar cargos si se supera el uso sin costo.
-4. **Publicar Storage:** en **Storage → Reglas**, reemplaza el contenido por `storage.rules` y presiona **Publicar**.
-
-El archivo `firebase.json` ya apunta a las dos reglas. No se cambia el plan ni se publica nada automáticamente desde este proyecto.
+El proyecto usa `petverse-alan-2026`. En Authentication, activa Google si aún no lo hiciste. En **Firestore Database → Reglas**, publica el contenido actualizado de `firestore.rules` después de copiarlo a Firebase Console. No es necesario configurar Storage.
 
 ## Ejecutar en desarrollo
 
@@ -33,8 +36,8 @@ flutter pub get
 flutter run -d chrome
 ```
 
-La configuración web de FlutterFire está en `lib/firebase_options.dart`. Si se agrega otra plataforma, vuelve a ejecutar `flutterfire configure` desde la carpeta del proyecto y selecciona las plataformas necesarias.
+La configuración web de FlutterFire está en `lib/firebase_options.dart`.
 
 ## Dependencias
 
-El proyecto incluye Firebase Core, Authentication, Firestore, Storage, Messaging y Cloud Functions, además de Provider, selección de imágenes, internacionalización y notificaciones locales. Algunos paquetes se usarán en los grupos siguientes.
+El proyecto usa Firebase Core, Authentication y Firestore, Provider, internacionalización y reproducción de video. No declara el paquete Firebase Storage.

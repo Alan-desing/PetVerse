@@ -1,25 +1,15 @@
-import 'package:firebase_core/firebase_core.dart' show FirebaseException;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../models/pet_profile.dart';
-import '../services/media_storage_service.dart';
 import '../services/pet_service.dart';
 import '../theme/app_theme.dart';
 
-/// Dialog used to create or edit a pet profile.
+/// Dialog used to create or edit a pet profile without cloud file storage.
 class PetFormDialog extends StatefulWidget {
-  /// Creates the pet form for [ownerId].
-  const PetFormDialog({
-    required this.ownerId,
-    this.pet,
-    super.key,
-  });
+  const PetFormDialog({required this.ownerId, this.pet, super.key});
 
-  /// Firebase user ID that owns the pet.
   final String ownerId;
-
-  /// Existing pet when editing.
   final PetProfile? pet;
 
   @override
@@ -33,14 +23,10 @@ class _PetFormDialogState extends State<PetFormDialog> {
   final _ageController = TextEditingController();
   final _weightController = TextEditingController();
   final _bioController = TextEditingController();
-  final _picker = ImagePicker();
+  final _photoUrlsController = TextEditingController();
 
   late String _type;
-  late List<String> _photoUrls;
-  late List<String> _storagePaths;
-  final List<XFile> _newPhotos = [];
   bool _isSaving = false;
-  double _uploadProgress = 0;
   String? _errorMessage;
 
   @override
@@ -53,8 +39,7 @@ class _PetFormDialogState extends State<PetFormDialog> {
     _ageController.text = pet?.ageYears.toString() ?? '';
     _weightController.text = pet?.weightKg.toString() ?? '';
     _bioController.text = pet?.bio ?? '';
-    _photoUrls = List<String>.from(pet?.photoUrls ?? const []);
-    _storagePaths = List<String>.from(pet?.storagePaths ?? const []);
+    _photoUrlsController.text = pet?.photoUrls.join('\n') ?? '';
   }
 
   @override
@@ -64,83 +49,46 @@ class _PetFormDialogState extends State<PetFormDialog> {
     _ageController.dispose();
     _weightController.dispose();
     _bioController.dispose();
+    _photoUrlsController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickPhotos() async {
-    try {
-      final selected = await _picker.pickMultiImage(imageQuality: 85);
-      if (selected.isEmpty || !mounted) return;
+  List<String> _photoUrls() => _photoUrlsController.text
+      .split(RegExp(r'\r?\n'))
+      .map((url) => url.trim())
+      .where((url) => url.isNotEmpty)
+      .toList();
 
-      final remaining = 6 - _photoUrls.length - _newPhotos.length;
-      if (selected.length > remaining) {
-        _showMessage('Puedes guardar hasta 6 fotos por mascota.');
-        return;
+  String? _validatePhotoUrls(String? value) {
+    final urls = (value ?? '')
+        .split(RegExp(r'\r?\n'))
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toList();
+
+    if (urls.length > 6) return 'Puedes agregar hasta 6 enlaces de foto.';
+    for (final url in urls) {
+      final uri = Uri.tryParse(url);
+      if (uri == null ||
+          !uri.hasAuthority ||
+          (uri.scheme != 'https' && uri.scheme != 'http')) {
+        return 'Cada foto necesita un enlace web válido.';
       }
-
-      setState(() {
-        _newPhotos.addAll(selected);
-        _errorMessage = null;
-      });
-    } catch (_) {
-      if (mounted) _showMessage('No pudimos abrir tus fotos.');
     }
-  }
-
-  void _removeExistingPhoto(int index) {
-    setState(() {
-      _photoUrls.removeAt(index);
-      if (index < _storagePaths.length) _storagePaths.removeAt(index);
-    });
-  }
-
-  void _removeNewPhoto(int index) {
-    setState(() => _newPhotos.removeAt(index));
-  }
-
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    return null;
   }
 
   Future<void> _savePet() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    if (_photoUrls.isEmpty && _newPhotos.isEmpty) {
-      setState(() => _errorMessage = 'Agrega al menos una foto de tu mascota.');
-      return;
-    }
 
     setState(() {
       _isSaving = true;
-      _uploadProgress = 0;
       _errorMessage = null;
     });
 
-    final petId =
-        widget.pet?.id ?? PetService.instance.createPetId(widget.ownerId);
-    final uploadedPhotos = <UploadedMedia>[];
-    var petSaved = false;
-
     try {
-      for (var index = 0; index < _newPhotos.length; index++) {
-        final uploaded = await MediaStorageService.instance.uploadFile(
-          file: _newPhotos[index],
-          userId: widget.ownerId,
-          folder: 'pets/' + petId,
-          onProgress: (progress) {
-            if (mounted) {
-              setState(() {
-                _uploadProgress = (index + progress) / _newPhotos.length;
-              });
-            }
-          },
-        );
-        uploadedPhotos.add(uploaded);
-      }
-
       final pet = PetProfile(
-        id: petId,
+        id: widget.pet?.id ?? PetService.instance.createPetId(widget.ownerId),
         ownerId: widget.ownerId,
         name: _nameController.text.trim(),
         type: _type,
@@ -148,47 +96,23 @@ class _PetFormDialogState extends State<PetFormDialog> {
         ageYears: int.parse(_ageController.text),
         weightKg: double.parse(_weightController.text.replaceAll(',', '.')),
         bio: _bioController.text.trim(),
-        photoUrls: [
-          ..._photoUrls,
-          ...uploadedPhotos.map((photo) => photo.downloadUrl),
-        ],
-        storagePaths: [
-          ..._storagePaths,
-          ...uploadedPhotos.map((photo) => photo.storagePath),
-        ],
+        photoUrls: _photoUrls(),
       );
       await PetService.instance.savePet(pet);
-      petSaved = true;
-
-      final previousPaths = widget.pet?.storagePaths ?? const <String>[];
-      for (final oldPath in previousPaths) {
-        if (!_storagePaths.contains(oldPath)) {
-          try {
-            await MediaStorageService.instance.deleteFile(oldPath);
-          } on FirebaseException {
-            // The saved profile no longer points to this file.
-          }
-        }
-      }
-
       if (mounted) Navigator.of(context).pop(true);
-    } on FormatException catch (error) {
-      if (!petSaved) await _cleanupUploadedPhotos(uploadedPhotos);
-      if (mounted) setState(() => _errorMessage = error.message.toString());
     } on FirebaseException catch (error) {
-      if (!petSaved) await _cleanupUploadedPhotos(uploadedPhotos);
       if (mounted) {
         setState(() {
           _errorMessage = error.code == 'permission-denied'
-              ? 'Firebase rechazó la operación. Publica las reglas actualizadas.'
-              : 'Storage no está disponible. Comprueba que esté habilitado en Firebase.';
+              ? 'Firebase rechazó el cambio. Publica las reglas actualizadas.'
+              : 'No pudimos guardar la mascota. Inténtalo otra vez.';
         });
       }
     } catch (_) {
-      if (!petSaved) await _cleanupUploadedPhotos(uploadedPhotos);
       if (mounted) {
         setState(
-          () => _errorMessage = 'No pudimos guardar la mascota. Inténtalo otra vez.',
+          () => _errorMessage =
+              'No pudimos guardar la mascota. Inténtalo otra vez.',
         );
       }
     } finally {
@@ -196,19 +120,10 @@ class _PetFormDialogState extends State<PetFormDialog> {
     }
   }
 
-  Future<void> _cleanupUploadedPhotos(List<UploadedMedia> photos) async {
-    for (final photo in photos) {
-      try {
-        await MediaStorageService.instance.deleteFile(photo.storagePath);
-      } on FirebaseException {
-        // Preserve the original save error.
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.pet != null;
+    final photoUrls = _photoUrls();
 
     return AlertDialog(
       title: Text(isEditing ? 'Editar mascota' : 'Agregar mascota'),
@@ -286,7 +201,9 @@ class _PetFormDialogState extends State<PetFormDialog> {
                     Expanded(
                       child: TextFormField(
                         controller: _weightController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Peso (kg)',
                         ),
@@ -315,49 +232,51 @@ class _PetFormDialogState extends State<PetFormDialog> {
                   ),
                 ),
                 const SizedBox(height: 10),
-                OutlinedButton.icon(
-                  onPressed: _isSaving ? null : _pickPhotos,
-                  icon: const Icon(Icons.add_photo_alternate_outlined),
-                  label: const Text('Elegir fotos'),
+                TextFormField(
+                  controller: _photoUrlsController,
+                  minLines: 2,
+                  maxLines: 4,
+                  maxLength: 1800,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(
+                    labelText: 'Enlaces de fotos (opcional)',
+                    hintText: 'Pega un enlace directo por línea',
+                    helperText: 'Sin Storage, usa enlaces públicos de imágenes. Máximo 6.',
+                    alignLabelWithHint: true,
+                    prefixIcon: Padding(
+                      padding: EdgeInsets.only(bottom: 50),
+                      child: Icon(Icons.link_rounded),
+                    ),
+                  ),
+                  validator: _validatePhotoUrls,
+                  onChanged: (_) => setState(() {}),
                 ),
-                if (_photoUrls.isNotEmpty || _newPhotos.isNotEmpty) ...[
+                if (photoUrls.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      for (var index = 0; index < _photoUrls.length; index++)
-                        _ExistingPhoto(
-                          url: _photoUrls[index],
-                          onRemove: _isSaving
-                              ? null
-                              : () => _removeExistingPhoto(index),
-                        ),
-                      for (var index = 0; index < _newPhotos.length; index++)
-                        _PendingPhoto(
-                          fileName: _newPhotos[index].name,
-                          onRemove: _isSaving
-                              ? null
-                              : () => _removeNewPhoto(index),
+                      for (final url in photoUrls)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            url,
+                            width: 72,
+                            height: 72,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 72,
+                              height: 72,
+                              color: const Color(0xFFFFE0D2),
+                              child: const Icon(
+                                Icons.broken_image_outlined,
+                                color: AppTheme.orange,
+                              ),
+                            ),
+                          ),
                         ),
                     ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    (_photoUrls.length + _newPhotos.length).toString() +
-                        ' fotos seleccionadas',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-                if (_isSaving && _newPhotos.isNotEmpty) ...[
-                  const SizedBox(height: 14),
-                  LinearProgressIndicator(value: _uploadProgress),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Subiendo fotos: ' +
-                        (_uploadProgress * 100).round().toString() +
-                        '%',
-                    textAlign: TextAlign.center,
                   ),
                 ],
                 if (_errorMessage != null) ...[
@@ -395,105 +314,6 @@ class _PetFormDialogState extends State<PetFormDialog> {
               : Text(isEditing ? 'Guardar cambios' : 'Guardar mascota'),
         ),
       ],
-    );
-  }
-}
-
-class _ExistingPhoto extends StatelessWidget {
-  const _ExistingPhoto({required this.url, required this.onRemove});
-
-  final String url;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.network(
-            url,
-            width: 76,
-            height: 76,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              width: 76,
-              height: 76,
-              color: const Color(0xFFF3F0ED),
-              child: const Icon(Icons.pets_rounded, color: AppTheme.orange),
-            ),
-          ),
-        ),
-        Positioned(
-          right: 2,
-          top: 2,
-          child: _RemovePhotoButton(onPressed: onRemove),
-        ),
-      ],
-    );
-  }
-}
-
-class _PendingPhoto extends StatelessWidget {
-  const _PendingPhoto({required this.fileName, required this.onRemove});
-
-  final String fileName;
-  final VoidCallback? onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Container(
-          width: 76,
-          height: 76,
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF0E9),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.image_outlined, color: AppTheme.orange),
-              const SizedBox(height: 2),
-              Text(
-                fileName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 9),
-              ),
-            ],
-          ),
-        ),
-        Positioned(
-          right: 2,
-          top: 2,
-          child: _RemovePhotoButton(onPressed: onRemove),
-        ),
-      ],
-    );
-  }
-}
-
-class _RemovePhotoButton extends StatelessWidget {
-  const _RemovePhotoButton({required this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.black54,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: const Padding(
-          padding: EdgeInsets.all(3),
-          child: Icon(Icons.close_rounded, size: 14, color: Colors.white),
-        ),
-      ),
     );
   }
 }

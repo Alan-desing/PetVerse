@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 /// Wraps the Firebase Authentication actions used by PetVerse.
 class AuthService {
   AuthService({FirebaseAuth? firebaseAuth})
-    : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
+      : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   /// Shared authentication service used by the application.
   static final AuthService instance = AuthService();
@@ -24,9 +24,19 @@ class AuthService {
     );
   }
 
+  /// Opens the Google sign-in popup for the Flutter Web app.
+  Future<UserCredential> signInWithGoogle() {
+    return _firebaseAuth.signInWithPopup(GoogleAuthProvider());
+  }
+
   /// Updates the display name shown on the Firebase Authentication account.
   Future<void> updateDisplayName(User user, String displayName) {
     return user.updateDisplayName(displayName.trim());
+  }
+
+  /// Updates the profile photo shown on the Firebase Authentication account.
+  Future<void> updatePhotoUrl(User user, String photoUrl) {
+    return user.updatePhotoURL(photoUrl);
   }
 
   /// Signs in an existing email and password account.

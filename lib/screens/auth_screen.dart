@@ -50,7 +50,10 @@ class _AuthScreenState extends State<AuthScreen> {
       'invalid-credential' => 'El correo o la contraseña son incorrectos.',
       'weak-password' => 'Elige una contraseña más segura.',
       'operation-not-allowed' =>
-        'El acceso por correo todavía no está activado en Firebase.',
+        'Este método de acceso todavía no está activado en Firebase.',
+      'popup-blocked' =>
+        'El navegador bloqueó la ventana de Google. Permite las ventanas emergentes e inténtalo otra vez.',
+      'popup-closed-by-user' => 'Se canceló el acceso con Google.',
       'too-many-requests' =>
         'Hubo demasiados intentos. Espera un momento y vuelve a probar.',
       'network-request-failed' =>
@@ -127,10 +130,33 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _showGoogleSetupNotice() {
-    _showMessage(
-      'Para usar Google, activa ese proveedor en Firebase. En este bloque funciona el acceso por correo y contraseña.',
-    );
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final credential = await AuthService.instance.signInWithGoogle();
+      final user = credential.user;
+      if (user != null) {
+        await UserProfileService.instance.getOrCreateProfile(user);
+      }
+    } on FirebaseAuthException catch (error) {
+      if (mounted && error.code != 'popup-closed-by-user') {
+        _showMessage(_authErrorMessage(error));
+      }
+    } on FirebaseException catch (error) {
+      if (mounted) {
+        _showMessage(
+          error.code == 'permission-denied'
+              ? 'Iniciaste sesión, pero Firestore bloqueó la creación del perfil. Publica las reglas actualizadas.'
+              : 'Iniciaste sesión, pero no pudimos guardar el perfil.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        _showMessage('No pudimos iniciar sesión con Google. Inténtalo otra vez.');
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   @override
@@ -377,7 +403,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 const _DividerLabel(label: 'o continúa con'),
                 const SizedBox(height: 18),
                 OutlinedButton.icon(
-                  onPressed: _isSubmitting ? null : _showGoogleSetupNotice,
+                  onPressed: _isSubmitting ? null : _signInWithGoogle,
                   icon: const Icon(Icons.g_mobiledata_rounded, size: 27),
                   label: const Text('Continuar con Google'),
                   style: OutlinedButton.styleFrom(

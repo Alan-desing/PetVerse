@@ -7,6 +7,7 @@ class UserProfile {
     required this.email,
     required this.bio,
     this.photoUrl,
+    this.photoStoragePath,
   });
 
   /// Firebase Authentication user ID and Firestore document ID.
@@ -21,8 +22,11 @@ class UserProfile {
   /// Short profile description.
   final String bio;
 
-  /// Optional profile photo URL, to be used in a later image upload block.
+  /// Optional URL for the profile photo.
   final String? photoUrl;
+
+  /// Storage path of the profile photo, used to replace or remove it.
+  final String? photoStoragePath;
 
   /// Builds a profile from a Firestore document map.
   factory UserProfile.fromMap(Map<String, dynamic> data) {
@@ -32,6 +36,7 @@ class UserProfile {
       email: data['email'] as String? ?? '',
       bio: data['bio'] as String? ?? '',
       photoUrl: data['photoUrl'] as String?,
+      photoStoragePath: data['photoStoragePath'] as String?,
     );
   }
 }

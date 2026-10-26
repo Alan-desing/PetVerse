@@ -1,28 +1,28 @@
 # PetVerse
 
-Red social para compartir la vida con tus mascotas. El proyecto se construye por bloques para que cada entrega tenga un cambio claro y pueda guardarse en un commit separado.
+Red social para compartir la vida con tus mascotas. El proyecto se desarrolla por grupos de requisitos para que cada avance pueda guardarse en un commit separado.
 
-## Bloque 1: identidad y acceso adaptable
+## Grupo 1: PV1, PV2, PV3 y PV8 — acceso, perfiles, mascotas y archivos
 
-- Pantalla de acceso y registro con validaciones de formulario.
-- Presentación adaptable para teléfono y escritorio.
-- Tema visual y marca básica de PetVerse.
-- Nombre, descripción y colores de la aplicación web instalable (PWA).
-- Provider para el estado visual del formulario.
+- Registro e inicio de sesión con correo y contraseña.
+- Acceso con Google y recuperación de contraseña por correo.
+- Perfil de usuario editable: nombre, descripción y foto.
+- Alta, edición y eliminación de perfiles de mascotas: nombre, tipo, raza, edad, peso, descripción y fotos.
+- Selección de fotos y videos desde el dispositivo, subida a Firebase Storage y barra de progreso.
+- Reglas de acceso para Firestore y Storage en `firestore.rules` y `storage.rules`.
 
-## Bloque 2: autenticación y perfil
+Las fotos no se agregan manualmente a una carpeta del proyecto: cada usuario las elige desde la aplicación.
 
-- Firebase se inicializa con la configuración web de `petverse-alan-2026`.
-- Registro, inicio de sesión y recuperación de contraseña con correo.
-- Cierre de sesión y cambio automático entre acceso y perfil.
-- Perfil básico con nombre y descripción guardados en Firestore.
-- Reglas de Firestore en `firestore.rules`; cada usuario puede leer y modificar únicamente su propio perfil.
+## Configuración pendiente en Firebase
 
-El acceso con Google queda pendiente de habilitar el proveedor Google en Firebase Console.
+La aplicación usa el proyecto `petverse-alan-2026`. Antes de probar el acceso con Google y las cargas, revisa estos ajustes en Firebase Console:
 
-### Publicar las reglas de Firestore
+1. **Activar Google:** abre **Authentication → Sign-in method**, selecciona **Google**, actívalo y guarda.
+2. **Publicar Firestore:** abre **Firestore Database → Reglas**, reemplaza el contenido por `firestore.rules` y presiona **Publicar**.
+3. **Habilitar Storage:** abre **Storage** y crea/activa el bucket. Firebase requiere el plan Blaze para usar Cloud Storage en proyectos nuevos; esto puede generar cargos si se supera el uso sin costo.
+4. **Publicar Storage:** en **Storage → Reglas**, reemplaza el contenido por `storage.rules` y presiona **Publicar**.
 
-La base se creó en modo de producción, por lo que las lecturas y escrituras quedan bloqueadas hasta publicar reglas. En Firebase Console, abre **Firestore Database → Reglas**, reemplaza el contenido por el de `firestore.rules` y presiona **Publicar**.
+El archivo `firebase.json` ya apunta a las dos reglas. No se cambia el plan ni se publica nada automáticamente desde este proyecto.
 
 ## Ejecutar en desarrollo
 
@@ -33,12 +33,8 @@ flutter pub get
 flutter run -d chrome
 ```
 
-El SDK y las herramientas instaladas para este equipo están disponibles desde la configuración local de VS Code del proyecto.
+La configuración web de FlutterFire está en `lib/firebase_options.dart`. Si se agrega otra plataforma, vuelve a ejecutar `flutterfire configure` desde la carpeta del proyecto y selecciona las plataformas necesarias.
 
-## Dependencias previstas
+## Dependencias
 
-El proyecto ya incluye los paquetes para Firebase Core, Authentication, Firestore, Storage, Messaging y Cloud Functions, además de Provider, selección de imágenes, internacionalización y notificaciones locales. Se irán usando a medida que se incorporen los bloques funcionales.
-
-## Configuración Firebase
-
-La configuración web generada por FlutterFire está en `lib/firebase_options.dart`. Si se agrega otra plataforma en el futuro, vuelve a ejecutar `flutterfire configure` desde la carpeta del proyecto y selecciona las plataformas necesarias.
+El proyecto incluye Firebase Core, Authentication, Firestore, Storage, Messaging y Cloud Functions, además de Provider, selección de imágenes, internacionalización y notificaciones locales. Algunos paquetes se usarán en los grupos siguientes.

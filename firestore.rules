@@ -17,6 +17,7 @@ service cloud.firestore {
             'email',
             'bio',
             'photoUrl',
+            'photoStoragePath',
             'createdAt',
             'updatedAt'
           ])
@@ -37,8 +38,92 @@ service cloud.firestore {
           && data.bio is string
           && data.bio.size() <= 240
           && (data.photoUrl == null || data.photoUrl is string)
+          && (!data.keys().hasAny(['photoStoragePath'])
+              || data.photoStoragePath is string)
           && data.createdAt is timestamp
           && data.updatedAt is timestamp;
+    }
+
+    function validPet(data, userId) {
+      return data.keys().hasOnly([
+            'ownerId',
+            'name',
+            'type',
+            'breed',
+            'ageYears',
+            'weightKg',
+            'bio',
+            'photoUrls',
+            'storagePaths',
+            'createdAt',
+            'updatedAt'
+          ])
+          && data.keys().hasAll([
+            'ownerId',
+            'name',
+            'type',
+            'breed',
+            'ageYears',
+            'weightKg',
+            'bio',
+            'photoUrls',
+            'storagePaths',
+            'createdAt',
+            'updatedAt'
+          ])
+          && data.ownerId == userId
+          && data.name is string
+          && data.name.size() > 0
+          && data.name.size() <= 60
+          && data.type in ['dog', 'cat']
+          && data.breed is string
+          && data.breed.size() <= 80
+          && data.ageYears is int
+          && data.ageYears >= 0
+          && data.ageYears <= 60
+          && data.weightKg is number
+          && data.weightKg > 0
+          && data.weightKg <= 300
+          && data.bio is string
+          && data.bio.size() <= 240
+          && data.photoUrls is list
+          && data.photoUrls.size() > 0
+          && data.photoUrls.size() <= 6
+          && data.storagePaths is list
+          && data.storagePaths.size() == data.photoUrls.size()
+          && data.createdAt is timestamp
+          && data.updatedAt is timestamp;
+    }
+
+    function validMedia(data, userId) {
+      return data.keys().hasOnly([
+            'fileName',
+            'contentType',
+            'downloadUrl',
+            'storagePath',
+            'createdAt'
+          ])
+          && data.keys().hasAll([
+            'fileName',
+            'contentType',
+            'downloadUrl',
+            'storagePath',
+            'createdAt'
+          ])
+          && data.fileName is string
+          && data.fileName.size() > 0
+          && data.fileName.size() <= 255
+          && data.contentType is string
+          && (data.contentType.matches('image/.*')
+              || data.contentType.matches('video/.*'))
+          && data.downloadUrl is string
+          && data.storagePath is string
+          && data.storagePath.split('/').size() == 4
+          && data.storagePath.split('/')[0] == 'users'
+          && data.storagePath.split('/')[1] == userId
+          && data.storagePath.split('/')[2] == 'media'
+          && data.storagePath.split('/')[3].size() > 0
+          && data.createdAt is timestamp;
     }
 
     match /users/{userId} {
@@ -56,10 +141,35 @@ service cloud.firestore {
             'displayName',
             'bio',
             'photoUrl',
+            'photoStoragePath',
             'updatedAt'
           ]);
 
       allow delete: if false;
+
+      match /pets/{petId} {
+        allow read: if ownsProfile(userId);
+
+        allow create: if ownsProfile(userId)
+            && validPet(request.resource.data, userId);
+
+        allow update: if ownsProfile(userId)
+            && validPet(request.resource.data, userId)
+            && request.resource.data.ownerId == resource.data.ownerId
+            && request.resource.data.createdAt == resource.data.createdAt;
+
+        allow delete: if ownsProfile(userId);
+      }
+
+      match /media/{mediaId} {
+        allow read: if ownsProfile(userId);
+
+        allow create: if ownsProfile(userId)
+            && validMedia(request.resource.data, userId);
+
+        allow update: if false;
+        allow delete: if ownsProfile(userId);
+      }
     }
   }
 }

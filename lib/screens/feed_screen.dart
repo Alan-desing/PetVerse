@@ -95,47 +95,72 @@ class _FeedScreenState extends State<FeedScreen> {
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
           child: Column(
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF0EEEB)),
-                ),
-                child: Row(
-                  children: [
-                    const CircleAvatar(
-                      backgroundColor: Color(0xFFFFE0D2),
-                      child: Icon(Icons.pets_rounded, color: AppTheme.orange),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 560;
+                  final avatar = const CircleAvatar(
+                    backgroundColor: Color(0xFFFFE0D2),
+                    child: Icon(Icons.pets_rounded, color: AppTheme.orange),
+                  );
+                  final prompt = Text(
+                    '$greeting. ¿Qué pasa con tu mascota?',
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  );
+                  final publishButton = FilledButton.icon(
+                    onPressed: _isPublishing ? null : _openComposer,
+                    icon: _isPublishing
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.add_rounded),
+                    label: const Text('Publicar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.orange,
+                      foregroundColor: Colors.white,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '$greeting. ¿Qué pasa con tu mascota?',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
+                  );
+
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFF0EEEB)),
                     ),
-                    FilledButton.icon(
-                      onPressed: _isPublishing ? null : _openComposer,
-                      icon: _isPublishing
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                    child: compact
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  avatar,
+                                  const SizedBox(width: 12),
+                                  Expanded(child: prompt),
+                                ],
                               ),
-                            )
-                          : const Icon(Icons.add_rounded),
-                      label: const Text('Publicar'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppTheme.orange,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
+                              const SizedBox(height: 12),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: publishButton,
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              avatar,
+                              const SizedBox(width: 12),
+                              Expanded(child: prompt),
+                              publishButton,
+                            ],
+                          ),
+                  );
+                },
               ),
               const SizedBox(height: 14),
               Expanded(

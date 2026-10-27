@@ -39,6 +39,14 @@ Las fotos de perfil y de mascotas también se cargan con un enlace web. Si en el
 - Las actividades y los avisos se guardan en subcolecciones privadas de Firestore. Publica las reglas actualizadas para habilitar este grupo.
 - Las notificaciones del navegador requieren que la aplicación esté abierta. Las notificaciones FCM automáticas cuando está cerrada necesitan un backend que envíe mensajes; no se configuran en este proyecto porque Cloud Functions exige el plan Blaze para desplegar.
 
+
+## Grupo 5: PV12 y PV13
+
+- PWA con manifest, íconos propios de PetVerse, acceso de instalación cuando el navegador lo ofrece y service worker para reutilizar archivos y abrir la aplicación sin conexión después de visitarla una vez.
+- La pantalla de acceso cambia entre una presentación de escritorio y una columna para pantallas angostas. El feed, los formularios y las ventanas de adopción se acomodan al ancho disponible.
+- Para instalar, abre PetVerse desde Chrome o Edge y usa el botón de descarga dentro de la aplicación cuando aparezca. Si no aparece, abre el menú del navegador y selecciona la opción para instalar o añadir a la pantalla de inicio.
+- El navegador permite instalar la PWA en un sitio seguro (HTTPS); `localhost` también sirve durante el desarrollo. Para publicar, despliega el contenido de `build/web` en un hosting HTTPS.
+- El modo sin conexión conserva los recursos que ya se cargaron. Las funciones conectadas a Firebase requieren conexión a Internet.
 ## Firebase
 
 El proyecto usa `petverse-alan-2026`. En Authentication, activa Google si aún no lo hiciste. En **Firestore Database → Reglas**, publica el contenido actualizado de `firestore.rules` después de copiarlo a Firebase Console. No es necesario configurar Storage.

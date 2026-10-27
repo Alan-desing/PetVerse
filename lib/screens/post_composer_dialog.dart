@@ -61,7 +61,9 @@ class _PostComposerDialogState extends State<PostComposerDialog> {
     return AlertDialog(
       title: const Text('Crear publicación'),
       content: SizedBox(
-        width: 520,
+        width: MediaQuery.sizeOf(context).width < 600
+            ? MediaQuery.sizeOf(context).width * 0.82
+            : 520.0,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,

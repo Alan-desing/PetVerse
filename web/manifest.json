@@ -1,35 +1,40 @@
 {
-    "name": "PetVerse | Comunidad para mascotas",
-    "short_name": "PetVerse",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#FFF9F5",
-    "theme_color": "#FF7043",
-    "description": "Una comunidad para compartir la vida con tus mascotas.",
-    "orientation": "portrait-primary",
-    "prefer_related_applications": false,
-    "icons": [
-        {
-            "src": "icons/Icon-192.png",
-            "sizes": "192x192",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-512.png",
-            "sizes": "512x512",
-            "type": "image/png"
-        },
-        {
-            "src": "icons/Icon-maskable-192.png",
-            "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "maskable"
-        },
-        {
-            "src": "icons/Icon-maskable-512.png",
-            "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "maskable"
-        }
-    ]
+  "id": "./",
+  "name": "PetVerse | Comunidad para mascotas",
+  "short_name": "PetVerse",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#FFF9F5",
+  "theme_color": "#FF7043",
+  "description": "Comparte momentos y encuentra una comunidad para ti y tus mascotas.",
+  "prefer_related_applications": false,
+  "categories": ["social", "lifestyle"],
+  "icons": [
+    {
+      "src": "icons/Icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/Icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/Icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/Icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
 }

@@ -12,6 +12,7 @@ import 'feed_screen.dart';
 import 'gamification_screen.dart';
 import 'notifications_screen.dart';
 import 'pets_section.dart';
+import '../widgets/pwa_install_button.dart';
 
 /// Main authenticated area with the social feed and editable profile.
 class ProfileScreen extends StatefulWidget {
@@ -166,12 +167,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           actions: [
-            TextButton.icon(
+            const PwaInstallButton(),
+            IconButton(
+              tooltip: 'Cerrar sesión',
               onPressed: _signOut,
               icon: const Icon(Icons.logout_rounded),
-              label: const Text('Cerrar sesión'),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 4),
           ],
         ),
         body: TabBarView(

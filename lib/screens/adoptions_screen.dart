@@ -365,7 +365,9 @@ class AdoptionPetDialog extends StatelessWidget {
     return AlertDialog(
       title: Text(pet.name),
       content: SizedBox(
-        width: 520,
+        width: MediaQuery.sizeOf(context).width < 600
+            ? MediaQuery.sizeOf(context).width * 0.82
+            : 520.0,
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -498,7 +500,9 @@ class _AdoptionContactDialogState extends State<AdoptionContactDialog> {
     return AlertDialog(
       title: Text('Consultar por ' + widget.pet.name),
       content: SizedBox(
-        width: 460,
+        width: MediaQuery.sizeOf(context).width < 600
+            ? MediaQuery.sizeOf(context).width * 0.82
+            : 460.0,
         child: SingleChildScrollView(
           child: Form(
             key: _formKey,
@@ -597,8 +601,12 @@ class AdoptionRequestsDialog extends StatelessWidget {
     return AlertDialog(
       title: const Text('Solicitudes recibidas'),
       content: SizedBox(
-        width: 540,
-        height: 430,
+        width: MediaQuery.sizeOf(context).width < 600
+            ? MediaQuery.sizeOf(context).width * 0.82
+            : 540.0,
+        height: MediaQuery.sizeOf(context).height < 700
+            ? MediaQuery.sizeOf(context).height * 0.65
+            : 430.0,
         child: StreamBuilder<List<AdoptionRequest>>(
           stream: AdoptionService.instance.watchIncomingRequests(ownerId),
           builder: (context, snapshot) {

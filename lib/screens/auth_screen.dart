@@ -7,6 +7,7 @@ import '../providers/auth_form_provider.dart';
 import '../services/auth_service.dart';
 import '../services/user_profile_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/pwa_install_button.dart';
 
 /// Responsive sign-in and registration screen for PetVerse.
 class AuthScreen extends StatefulWidget {
@@ -51,8 +52,7 @@ class _AuthScreenState extends State<AuthScreen> {
       'weak-password' => 'Elige una contraseña más segura.',
       'operation-not-allowed' =>
         'Este método de acceso todavía no está activado en Firebase.',
-      'popup-blocked' =>
-        'El navegador bloqueó la ventana de Google. Permite las ventanas emergentes e inténtalo otra vez.',
+      'popup-blocked' => 'El navegador bloqueó la ventana de Google. Permite las ventanas emergentes e inténtalo otra vez.',
       'popup-closed-by-user' => 'Se canceló el acceso con Google.',
       'too-many-requests' =>
         'Hubo demasiados intentos. Espera un momento y vuelve a probar.',
@@ -152,7 +152,9 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (_) {
       if (mounted) {
-        _showMessage('No pudimos iniciar sesión con Google. Inténtalo otra vez.');
+        _showMessage(
+          'No pudimos iniciar sesión con Google. Inténtalo otra vez.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -163,44 +165,53 @@ class _AuthScreenState extends State<AuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth >= 960;
-
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: Center(
-                  child: Container(
-                    width: double.infinity,
-                    constraints: const BoxConstraints(maxWidth: 1320),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isWide ? 52 : 22,
-                      vertical: isWide ? 42 : 28,
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= 960;
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
                     ),
-                    child: isWide
-                        ? Row(
-                            children: [
-                              const Expanded(child: _WelcomePanel()),
-                              const SizedBox(width: 64),
-                              SizedBox(width: 440, child: _buildFormPanel()),
-                            ],
-                          )
-                        : Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _buildCompactBrand(),
-                              const SizedBox(height: 28),
-                              _buildFormPanel(),
-                              const SizedBox(height: 24),
-                              const _FooterNote(),
-                            ],
-                          ),
+                    child: Center(
+                      child: Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(maxWidth: 1320),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isWide ? 52 : 22,
+                          vertical: isWide ? 42 : 28,
+                        ),
+                        child: isWide
+                            ? Row(
+                                children: [
+                                  const Expanded(child: _WelcomePanel()),
+                                  const SizedBox(width: 64),
+                                  SizedBox(
+                                    width: 440,
+                                    child: _buildFormPanel(),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildCompactBrand(),
+                                  const SizedBox(height: 28),
+                                  _buildFormPanel(),
+                                  const SizedBox(height: 24),
+                                  const _FooterNote(),
+                                ],
+                              ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-          },
+                );
+              },
+            ),
+            const Positioned(top: 4, right: 4, child: PwaInstallButton()),
+          ],
         ),
       ),
     );

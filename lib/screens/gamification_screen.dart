@@ -11,7 +11,7 @@ class GamificationScreen extends StatelessWidget {
 
   final User user;
 
-  static const _badges = <_BadgeDefinition>[
+  static final _badges = <_BadgeDefinition>[
     _BadgeDefinition(
       title: 'Primera estrella',
       description: 'Comparte tu primera publicación.',

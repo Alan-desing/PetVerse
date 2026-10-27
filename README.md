@@ -1,67 +1,125 @@
 # PetVerse
 
-Red social para compartir la vida con tus mascotas. El proyecto avanza por grupos de requisitos para que cada parte pueda guardarse en un commit separado.
+PetVerse es una red social web para compartir la vida de las mascotas. Cada persona puede crear su cuenta, completar su perfil, registrar a sus mascotas, publicar contenido, interactuar con otras publicaciones y ponerse en contacto con usuarios que ofrecen mascotas en adopción.
 
-## Sin vincular facturación
+La aplicación está desarrollada con Flutter Web y utiliza Firebase Authentication para las cuentas y Cloud Firestore para guardar y sincronizar la información.
 
-Este proyecto no usa Firebase Storage ni necesita vincular una cuenta de facturación. Las imágenes y los videos se agregan mediante enlaces públicos directos; la aplicación guarda solo el enlace y los demás datos en Firestore. No se suben archivos desde el dispositivo.
+## Funcionalidades
 
-Las fotos de perfil y de mascotas también se cargan con un enlace web. Si en el futuro se quiere subir archivos desde el dispositivo a la nube, habrá que elegir un servicio de almacenamiento y revisar sus condiciones por separado.
+### Cuentas y perfiles
 
-## Grupo 1: PV1, PV2, PV3 y PV8
+- Registro e inicio de sesión con correo electrónico y contraseña.
+- Inicio de sesión con Google y recuperación de contraseña por correo.
+- Perfil editable con nombre, biografía y enlace a una imagen.
+- Alta, edición y eliminación de mascotas. Cada ficha permite guardar nombre, tipo, raza, edad, peso, descripción, localidad y enlaces a fotos.
+- Una mascota puede marcarse como disponible para adopción.
 
-- Registro e inicio de sesión con correo y contraseña.
-- Acceso con Google y recuperación de contraseña por correo.
-- Perfil editable: nombre, descripción y enlace a una foto.
-- Alta, edición y eliminación de mascotas: nombre, tipo, raza, edad, peso, descripción y enlaces de fotos.
-- El requisito PV8 de subir archivos desde el dispositivo a Firebase Storage queda pendiente porque el proyecto no utilizará Storage.
+### Publicaciones e interacción
 
-## Grupo 2: PV4, PV5 y PV6
+- Feed de publicaciones ordenado desde las más recientes.
+- Publicaciones con texto y enlace opcional a una imagen o video.
+- Reproducción de videos cuando el enlace es directo y compatible con el navegador.
+- Me gusta con contador actualizado en tiempo real y animación al interactuar.
+- Comentarios en tiempo real. Cada persona puede eliminar sus propios comentarios.
 
-- Feed de publicaciones en orden cronológico, con autor, texto y enlace opcional de imagen o video.
-- Videos reproducibles en la publicación cuando el enlace apunta directamente a un formato compatible con el navegador.
-- Me gusta con botón o doble clic en la imagen, animación, usuario marcado y contador actualizado en tiempo real.
-- Comentarios en tiempo real; cada usuario puede eliminar sus propios comentarios.
+### Adopciones y mensajes
 
-## Grupo 3: PV7 y PV9
+- Catálogo de mascotas disponibles para adopción.
+- Filtros por tipo de mascota, edad y localidad.
+- Formulario para enviar una solicitud de contacto al dueño.
+- Las solicitudes recibidas pueden consultarse desde la aplicación.
+- El contacto inicia una conversación privada entre quien consulta y el dueño. Los mensajes y el historial se actualizan en tiempo real.
 
-- Catálogo de mascotas publicadas para adopción, con filtros por tipo, rango de edad y localidad.
-- Detalle de cada mascota y formulario para contactar al dueño.
-- La solicitud de contacto crea un chat privado entre ambos usuarios.
-- Historial de mensajes en tiempo real desde la pestaña Mensajes.
-- Las solicitudes quedan visibles para el dueño en Adopciones → Solicitudes recibidas. No se envían correos automáticos.
+### Avisos y logros
 
-## Grupo 4: PV10 y PV11
+- Avisos privados cuando otra persona marca Me gusta, comenta o envía un mensaje.
+- Avisos dentro de PetVerse en tiempo real y notificaciones del navegador si se otorga permiso mientras la aplicación está abierta.
+- Sistema de puntos: 10 por publicar, 2 por dar Me gusta a una publicación de otra persona y 3 por comentar. Los puntos por Me gusta se acreditan una sola vez por publicación.
+- Pantalla de logros con el total de puntos y cinco insignias.
 
-- Avisos privados en tiempo real cuando alguien da Me gusta, comenta o envía un mensaje. Se ven desde la pestaña Avisos.
-- Con permiso del navegador, los avisos nuevos también aparecen como notificaciones del navegador mientras PetVerse está abierta.
-- Los puntos se otorgan una sola vez por publicación (10) y por Me gusta a otra persona (2), y por cada comentario (3). La pestaña Logros muestra los totales y cinco insignias.
-- Las actividades y los avisos se guardan en subcolecciones privadas de Firestore. Publica las reglas actualizadas para habilitar este grupo.
-- Las notificaciones del navegador requieren que la aplicación esté abierta. Las notificaciones FCM automáticas cuando está cerrada necesitan un backend que envíe mensajes; no se configuran en este proyecto porque Cloud Functions exige el plan Blaze para desplegar.
+### Aplicación web progresiva
 
+- Diseño adaptable a celulares, tabletas y computadoras.
+- Manifest, íconos propios, acceso de instalación y service worker.
+- El service worker conserva recursos web y permite volver a abrir la aplicación sin conexión después de una visita. Las funciones que consultan Firebase requieren Internet.
 
-## Grupo 5: PV12 y PV13
+## Tecnologías
 
-- PWA con manifest, íconos propios de PetVerse, acceso de instalación cuando el navegador lo ofrece y service worker para reutilizar archivos y abrir la aplicación sin conexión después de visitarla una vez.
-- La pantalla de acceso cambia entre una presentación de escritorio y una columna para pantallas angostas. El feed, los formularios y las ventanas de adopción se acomodan al ancho disponible.
-- Para instalar, abre PetVerse desde Chrome o Edge y usa el botón de descarga dentro de la aplicación cuando aparezca. Si no aparece, abre el menú del navegador y selecciona la opción para instalar o añadir a la pantalla de inicio.
-- El navegador permite instalar la PWA en un sitio seguro (HTTPS); `localhost` también sirve durante el desarrollo. Para publicar, despliega el contenido de `build/web` en un hosting HTTPS.
-- El modo sin conexión conserva los recursos que ya se cargaron. Las funciones conectadas a Firebase requieren conexión a Internet.
-## Firebase
+- **Flutter y Dart:** interfaz y lógica de la aplicación web.
+- **Firebase Authentication:** creación de cuentas, inicio de sesión y recuperación de contraseña.
+- **Cloud Firestore:** perfiles, mascotas, publicaciones, comentarios, Me gusta, solicitudes, conversaciones, avisos y eventos de puntos.
+- **Provider:** estado compartido del formulario de acceso.
+- **intl:** formato de fechas y valores localizados.
+- **video_player:** reproducción de videos compatibles dentro de las publicaciones.
+- **PWA:** manifest, íconos, instalación y service worker.
 
-El proyecto usa `petverse-alan-2026`. En Authentication, activa Google si aún no lo hiciste. En **Firestore Database → Reglas**, publica el contenido actualizado de `firestore.rules` después de copiarlo a Firebase Console. No es necesario configurar Storage.
+## Organización del código
+
+```text
+lib/
+├── main.dart                  # Inicialización de Firebase y aplicación
+├── auth_gate.dart             # Decide si se muestra acceso o la aplicación
+├── models/                    # Modelos de perfiles, mascotas y actividad
+├── providers/                 # Estado compartido de la interfaz
+├── screens/                   # Pantallas y formularios
+├── services/                  # Acceso a Authentication y Firestore
+├── theme/                     # Colores y estilos
+└── widgets/                   # Componentes reutilizables
+
+web/
+├── index.html                 # Documento web y registro del service worker
+├── manifest.json              # Datos para instalar la PWA
+├── petverse-sw.js             # Caché y apertura sin conexión
+└── icons/                     # Íconos de la aplicación
+```
+
+Los servicios separan las operaciones con Firebase de las pantallas. Los streams de Firestore permiten reflejar cambios en publicaciones, comentarios, conversaciones, avisos y logros sin recargar la aplicación.
+
+## Datos en Firestore
+
+- `users/{userId}`: perfil de la persona.
+- `users/{userId}/pets/{petId}`: mascotas y datos de adopción.
+- `users/{userId}/activityEvents/{eventId}`: eventos usados para calcular puntos.
+- `users/{userId}/notifications/{notificationId}`: avisos privados.
+- `posts/{postId}`: publicaciones; sus subcolecciones `likes` y `comments` guardan las interacciones.
+- `adoptionRequests/{requestId}`: solicitudes de contacto.
+- `chats/{chatId}` y `chats/{chatId}/messages/{messageId}`: conversaciones y mensajes.
+
+Las reglas de acceso se encuentran en `firestore.rules`. El proyecto debe tener estas reglas publicadas en la base de datos de Firebase para que las operaciones de la aplicación estén autorizadas.
+
+## Configuración de Firebase
+
+La configuración web de FlutterFire está guardada en `lib/firebase_options.dart` y apunta al proyecto `petverse-alan-2026`.
+
+En Firebase Console se deben encontrar habilitados los proveedores de correo y contraseña y Google en **Authentication**, y creada la base de datos en **Firestore Database**. Para otro proyecto de Firebase, hay que ejecutar `flutterfire configure` y reemplazar la configuración web generada.
+
+## Imágenes, videos y servicios que no se utilizan
+
+Las imágenes de perfil, mascotas y publicaciones se indican mediante enlaces web públicos. PetVerse no sube archivos desde el dispositivo y no utiliza Firebase Storage; por eso no necesita vincular una cuenta de facturación para el almacenamiento de archivos. Los enlaces deben ser accesibles desde el navegador.
+
+Los avisos se guardan y muestran en Firestore. Esta versión no envía notificaciones push de Firebase cuando el navegador está cerrado: eso requiere un servicio de backend que envíe mensajes. Las dependencias de Messaging y Cloud Functions presentes en el proyecto no se utilizan para enviar avisos desde un servidor.
 
 ## Ejecutar en desarrollo
 
-Abre esta carpeta en VS Code y ejecuta desde su terminal:
+Se necesita Flutter con soporte web y un navegador compatible, como Chrome.
+
+Desde la carpeta del proyecto, ejecutar:
 
 ```powershell
 flutter pub get
 flutter run -d chrome
 ```
 
-La configuración web de FlutterFire está en `lib/firebase_options.dart`.
+En el primer acceso a Firebase, iniciar sesión con una cuenta creada en el proyecto y verificar que estén publicadas las reglas de `firestore.rules`.
 
-## Dependencias
+## Generar la versión web
 
-El proyecto usa Firebase Core, Authentication, Firestore, Provider, internacionalización y reproducción de video. `firebase_messaging` sigue instalado como dependencia, pero los avisos de este grupo no envían mensajes FCM desde un servidor. No declara el paquete Firebase Storage.
+```powershell
+flutter build web --release
+```
+
+Flutter genera la versión de producción en `build/web`. Para Vercel, el comando de compilación es `flutter build web --release` y el directorio de salida es `build/web`. El sitio debe servirse mediante HTTPS para poder instalar la PWA y utilizar las funciones del navegador que requieren un contexto seguro. Si el inicio de sesión no funciona en el dominio publicado, hay que agregar ese dominio a **Authentication → Configuración → Dominios autorizados** en Firebase Console.
+
+## Dependencias principales
+
+Las dependencias del proyecto están declaradas en `pubspec.yaml`. Para instalar o actualizar las dependencias antes de ejecutar la aplicación, usar `flutter pub get`.

@@ -41,6 +41,7 @@ class ChatService {
         );
   }
 
+  /// Sends a message and records a private notice for the other participant.
   Future<void> sendMessage({
     required String chatId,
     required String senderId,
@@ -51,7 +52,28 @@ class ChatService {
     if (normalizedText.isEmpty) return;
 
     final chat = _firestore.collection('chats').doc(chatId);
+    final chatSnapshot = await chat.get();
+    if (!chatSnapshot.exists) {
+      throw StateError('La conversación ya no existe.');
+    }
+    final participants = List<String>.from(
+      chatSnapshot.data()!['participantIds'] as List,
+    );
+    final recipients = participants.where((id) => id != senderId).toList();
+    if (!participants.contains(senderId) || recipients.length != 1) {
+      throw StateError('No tienes acceso a esta conversación.');
+    }
+
+    final recipientId = recipients.single;
     final message = chat.collection('messages').doc();
+    final notification = _firestore
+        .collection('users')
+        .doc(recipientId)
+        .collection('notifications')
+        .doc('message_${message.id}');
+    final preview = normalizedText.length <= 150
+        ? normalizedText
+        : '${normalizedText.substring(0, 147)}...';
     final batch = _firestore.batch();
     batch.update(chat, {
       'lastMessage': normalizedText,
@@ -65,6 +87,19 @@ class ChatService {
       'senderName': senderName.trim(),
       'text': normalizedText,
       'createdAt': FieldValue.serverTimestamp(),
+    });
+    batch.set(notification, {
+      'type': 'message',
+      'actorId': senderId,
+      'actorName': senderName.trim(),
+      'postId': null,
+      'commentId': null,
+      'chatId': chatId,
+      'messageId': message.id,
+      'sourceId': message.id,
+      'body': preview,
+      'createdAt': FieldValue.serverTimestamp(),
+      'isRead': false,
     });
     await batch.commit();
   }

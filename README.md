@@ -31,6 +31,14 @@ Las fotos de perfil y de mascotas también se cargan con un enlace web. Si en el
 - Historial de mensajes en tiempo real desde la pestaña Mensajes.
 - Las solicitudes quedan visibles para el dueño en Adopciones → Solicitudes recibidas. No se envían correos automáticos.
 
+## Grupo 4: PV10 y PV11
+
+- Avisos privados en tiempo real cuando alguien da Me gusta, comenta o envía un mensaje. Se ven desde la pestaña Avisos.
+- Con permiso del navegador, los avisos nuevos también aparecen como notificaciones del navegador mientras PetVerse está abierta.
+- Los puntos se otorgan una sola vez por publicación (10) y por Me gusta a otra persona (2), y por cada comentario (3). La pestaña Logros muestra los totales y cinco insignias.
+- Las actividades y los avisos se guardan en subcolecciones privadas de Firestore. Publica las reglas actualizadas para habilitar este grupo.
+- Las notificaciones del navegador requieren que la aplicación esté abierta. Las notificaciones FCM automáticas cuando está cerrada necesitan un backend que envíe mensajes; no se configuran en este proyecto porque Cloud Functions exige el plan Blaze para desplegar.
+
 ## Firebase
 
 El proyecto usa `petverse-alan-2026`. En Authentication, activa Google si aún no lo hiciste. En **Firestore Database → Reglas**, publica el contenido actualizado de `firestore.rules` después de copiarlo a Firebase Console. No es necesario configurar Storage.
@@ -48,4 +56,4 @@ La configuración web de FlutterFire está en `lib/firebase_options.dart`.
 
 ## Dependencias
 
-El proyecto usa Firebase Core, Authentication y Firestore, Provider, internacionalización y reproducción de video. No declara el paquete Firebase Storage.
+El proyecto usa Firebase Core, Authentication, Firestore, Provider, internacionalización y reproducción de video. `firebase_messaging` sigue instalado como dependencia, pero los avisos de este grupo no envían mensajes FCM desde un servidor. No declara el paquete Firebase Storage.

@@ -9,6 +9,8 @@ import '../theme/app_theme.dart';
 import 'adoptions_screen.dart';
 import 'chat_screen.dart';
 import 'feed_screen.dart';
+import 'gamification_screen.dart';
+import 'notifications_screen.dart';
 import 'pets_section.dart';
 
 /// Main authenticated area with the social feed and editable profile.
@@ -139,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 6,
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
@@ -158,6 +160,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 icon: Icon(Icons.chat_bubble_outline_rounded),
                 text: 'Mensajes',
               ),
+              Tab(icon: Icon(Icons.notifications_none_rounded), text: 'Avisos'),
+              Tab(icon: Icon(Icons.emoji_events_outlined), text: 'Logros'),
               Tab(icon: Icon(Icons.person_outline_rounded), text: 'Mi perfil'),
             ],
           ),
@@ -175,6 +179,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             FeedScreen(user: widget.user),
             AdoptionsScreen(user: widget.user),
             ChatScreen(user: widget.user),
+            NotificationsScreen(user: widget.user),
+            GamificationScreen(user: widget.user),
             _buildProfileTab(context),
           ],
         ),

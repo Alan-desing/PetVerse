@@ -156,6 +156,9 @@ service cloud.firestore {
                   && request.resource.data.likeCount == resource.data.likeCount - 1));
     }
 
+    function commentPath(postId, commentId) {
+      return /databases/$(database)/documents/posts/$(postId)/comments/$(commentId);
+    }
     function adoptionPetPath(ownerId, petId) {
       return /databases/$(database)/documents/users/$(ownerId)/pets/$(petId);
     }
@@ -217,6 +220,122 @@ service cloud.firestore {
       return /databases/$(database)/documents/adoptionRequests/$(requestId);
     }
 
+    function validActivityEvent(userId, eventId, data) {
+      return ownsProfile(userId)
+          && data.keys().hasOnly([
+            'kind',
+            'targetId',
+            'postId',
+            'points',
+            'createdAt'
+          ])
+          && data.keys().hasAll([
+            'kind',
+            'targetId',
+            'points',
+            'createdAt'
+          ])
+          && data.targetId is string
+          && data.targetId.size() > 0
+          && data.targetId.size() <= 128
+          && data.points is int
+          && data.createdAt is timestamp
+          && ((data.kind == 'post'
+                  && !data.keys().hasAny(['postId'])
+                  && eventId == 'post_' + data.targetId
+                  && data.points == 10
+                  && existsAfter(parentPostPath(data.targetId))
+                  && getAfter(parentPostPath(data.targetId)).data.authorId == userId)
+              || (data.kind == 'like'
+                  && !data.keys().hasAny(['postId'])
+                  && eventId == 'like_' + data.targetId
+                  && data.points == 2
+                  && existsAfter(likePath(data.targetId, userId))
+                  && getAfter(likePath(data.targetId, userId)).data.userId == userId
+                  && existsAfter(parentPostPath(data.targetId))
+                  && getAfter(parentPostPath(data.targetId)).data.authorId != userId)
+              || (data.kind == 'comment'
+                  && data.postId is string
+                  && data.postId.size() > 0
+                  && eventId == 'comment_' + data.targetId
+                  && data.points == 3
+                  && existsAfter(commentPath(data.postId, data.targetId))
+                  && getAfter(commentPath(data.postId, data.targetId)).data.authorId == userId));
+    }
+
+    function validNotification(userId, notificationId, data) {
+      return signedIn()
+          && userId != request.auth.uid
+          && data.keys().hasOnly([
+            'type',
+            'actorId',
+            'actorName',
+            'postId',
+            'commentId',
+            'chatId',
+            'messageId',
+            'sourceId',
+            'body',
+            'createdAt',
+            'isRead'
+          ])
+          && data.keys().hasAll([
+            'type',
+            'actorId',
+            'actorName',
+            'postId',
+            'commentId',
+            'chatId',
+            'messageId',
+            'sourceId',
+            'body',
+            'createdAt',
+            'isRead'
+          ])
+          && data.actorId == request.auth.uid
+          && data.actorName is string
+          && data.actorName.size() > 0
+          && data.actorName.size() <= 80
+          && data.sourceId is string
+          && data.sourceId.size() > 0
+          && data.body is string
+          && data.body.size() <= 150
+          && data.createdAt is timestamp
+          && data.isRead == false
+          && ((data.type == 'like'
+                  && data.postId is string
+                  && data.commentId == null
+                  && data.chatId == null
+                  && data.messageId == null
+                  && notificationId == 'like_' + data.sourceId
+                  && existsAfter(likePath(data.postId, request.auth.uid))
+                  && getAfter(likePath(data.postId, request.auth.uid)).data.eventId == data.sourceId
+                  && existsAfter(parentPostPath(data.postId))
+                  && getAfter(parentPostPath(data.postId)).data.authorId == userId)
+              || (data.type == 'comment'
+                  && data.postId is string
+                  && data.commentId is string
+                  && data.chatId == null
+                  && data.messageId == null
+                  && data.sourceId == data.commentId
+                  && notificationId == 'comment_' + data.sourceId
+                  && existsAfter(commentPath(data.postId, data.commentId))
+                  && getAfter(commentPath(data.postId, data.commentId)).data.authorId == request.auth.uid
+                  && existsAfter(parentPostPath(data.postId))
+                  && getAfter(parentPostPath(data.postId)).data.authorId == userId)
+              || (data.type == 'message'
+                  && data.postId == null
+                  && data.commentId == null
+                  && data.chatId is string
+                  && data.messageId is string
+                  && data.sourceId == data.messageId
+                  && notificationId == 'message_' + data.sourceId
+                  && existsAfter(chatPath(data.chatId))
+                  && request.auth.uid in getAfter(chatPath(data.chatId)).data.participantIds
+                  && userId in getAfter(chatPath(data.chatId)).data.participantIds
+                  && existsAfter(chatMessagePath(data.chatId, data.messageId))
+                  && getAfter(chatMessagePath(data.chatId, data.messageId)).data.senderId == request.auth.uid));
+    }
     function validChatMessage(data) {
       return data.keys().hasOnly([
             'senderId',
@@ -374,6 +493,20 @@ service cloud.firestore {
       }
     }
 
+    match /users/{userId}/activityEvents/{eventId} {
+      allow read: if ownsProfile(userId);
+      allow create: if validActivityEvent(userId, eventId, request.resource.data);
+      allow update, delete: if false;
+    }
+
+    match /users/{userId}/notifications/{notificationId} {
+      allow read: if ownsProfile(userId);
+      allow create: if validNotification(userId, notificationId, request.resource.data);
+      allow update: if ownsProfile(userId)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead'])
+          && request.resource.data.isRead is bool;
+      allow delete: if ownsProfile(userId);
+    }
     match /adoptionRequests/{requestId} {
       allow create: if signedIn()
           && validAdoptionRequest(request.resource.data);
@@ -419,10 +552,13 @@ service cloud.firestore {
         allow read: if signedIn();
         allow create: if signedIn()
             && request.auth.uid == userId
-            && request.resource.data.keys().hasOnly(['userId', 'createdAt'])
-            && request.resource.data.keys().hasAll(['userId', 'createdAt'])
+            && request.resource.data.keys().hasOnly(['userId', 'createdAt', 'eventId'])
+            && request.resource.data.keys().hasAll(['userId', 'createdAt', 'eventId'])
             && request.resource.data.userId == userId
             && request.resource.data.createdAt is timestamp
+            && request.resource.data.eventId is string
+            && request.resource.data.eventId.size() > 0
+            && request.resource.data.eventId.size() <= 128
             && !exists(likePath(postId, userId))
             && get(parentPostPath(postId)).data.likeCount is int
             && getAfter(parentPostPath(postId)).data.likeCount

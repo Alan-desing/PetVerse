@@ -249,6 +249,12 @@ class _PostCardState extends State<_PostCard> {
     });
   }
 
+  String get _actorName {
+    final name = widget.user.displayName?.trim() ?? '';
+    if (name.isNotEmpty) return name;
+    return widget.user.email?.split('@').first ?? 'Usuario';
+  }
+
   Future<void> _toggleLike() async {
     if (_isTogglingLike) return;
     setState(() => _isTogglingLike = true);
@@ -256,6 +262,7 @@ class _PostCardState extends State<_PostCard> {
       await PostService.instance.toggleLike(
         postId: widget.post.id,
         userId: widget.user.uid,
+        actorName: _actorName,
       );
     } on FirebaseException {
       if (mounted) {
